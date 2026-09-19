@@ -238,6 +238,16 @@ class TriviaApp:
         self.canvas.grid(row=0, column=0, sticky="nsew")
         self.scrollbar.config(command=self.canvas.yview)
 
+        self.credit_label = tk.Label(
+            self.root,
+            text="Constructed by ChatGPT (GPT-5)",
+            bg=self.INDIGO,
+            fg=self.MUTED,
+            font=(self.body_font, 9),
+            pady=6,
+        )
+        self.credit_label.grid(row=1, column=0, columnspan=2, sticky="ew")
+
         container = ttk.Frame(self.canvas, padding=24, style="App.TFrame")
         self.canvas_window = self.canvas.create_window(
             (0, 0), window=container, anchor="nw"

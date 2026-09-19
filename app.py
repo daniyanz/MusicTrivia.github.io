@@ -15,16 +15,22 @@ from pydantic import BaseModel, Field
 
 
 class TriviaQuestion(BaseModel):
+    """A single generated question with four choices and its answer key."""
+
     question: str
     choices: list[str] = Field(min_length=4, max_length=4)
     correct_answer: Literal["A", "B", "C", "D"]
 
 
 class TriviaQuiz(BaseModel):
+    """The validated 15-question payload returned by the OpenAI API."""
+
     questions: list[TriviaQuestion] = Field(min_length=15, max_length=15)
 
 
 class TriviaApp:
+    """Manage the user interface, game state, persistence, and quiz generation."""
+
     CHOICE_LETTERS = "ABCD"
     HIGH_SCORE_FILE = Path(__file__).with_name("high_score.json")
     QUESTION_HISTORY_FILE = Path(__file__).with_name("question_history.json")
@@ -72,6 +78,8 @@ class TriviaApp:
     )
 
     def __init__(self, root: tk.Tk) -> None:
+        """Initialize window settings, saved data, game state, and UI widgets."""
+
         self.root = root
         self.root.title("Who Wants to Be a Music Millionaire?")
         self.root.geometry("760x780")
@@ -109,12 +117,16 @@ class TriviaApp:
 
     @staticmethod
     def _pick_font(available_fonts: set[str], *preferred_fonts: str) -> str:
+        """Return the first installed preferred font or Tk's default font."""
+
         return next(
             (font for font in preferred_fonts if font in available_fonts),
             "TkDefaultFont",
         )
 
     def _configure_styles(self) -> None:
+        """Define the shared colors, fonts, and interaction styles for widgets."""
+
         style = ttk.Style()
         style.theme_use("clam")
         style.configure("App.TFrame", background=self.NAVY)
@@ -193,6 +205,8 @@ class TriviaApp:
         )
 
     def _add_logo(self, container: ttk.Frame) -> None:
+        """Load the project logo and place it at the top of the main content."""
+
         self.logo_image = tk.PhotoImage(file=str(self.LOGO_FILE))
         tk.Label(
             container,
@@ -202,6 +216,8 @@ class TriviaApp:
         ).pack(pady=(0, 8))
 
     def _build_interface(self) -> None:
+        """Create every screen, label, option, button, and scrolling container."""
+
         self.root.configure(background=self.NAVY)
         self.root.grid_rowconfigure(0, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
@@ -363,9 +379,13 @@ class TriviaApp:
         self.home_button.place_forget()
 
     def _update_scroll_region(self, _event: tk.Event) -> None:
+        """Update the canvas boundaries whenever its inner content changes size."""
+
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
     def _set_scrollbar(self, first: str, last: str) -> None:
+        """Synchronize the scrollbar and hide it when all content already fits."""
+
         self.scrollbar.set(first, last)
         if float(first) <= 0 and float(last) >= 1:
             self.scrollbar.grid_remove()
@@ -373,12 +393,16 @@ class TriviaApp:
             self.scrollbar.grid()
 
     def _resize_content(self, event: tk.Event) -> None:
+        """Match content width to the window and re-wrap long text responsively."""
+
         self.canvas.itemconfigure(self.canvas_window, width=event.width)
         wrap_width = max(300, event.width - 80)
         self.question_label.config(wraplength=wrap_width)
         self.feedback_label.config(wraplength=wrap_width)
 
     def _scroll_with_mouse(self, event: tk.Event) -> None:
+        """Translate mouse-wheel or trackpad movement into smooth pixel scrolling."""
+
         if not event.delta:
             return
 
@@ -389,6 +413,8 @@ class TriviaApp:
         self._scroll_pixels(pixel_delta)
 
     def _scroll_pixels(self, pixel_delta: float) -> None:
+        """Move the canvas by a pixel-based amount while respecting its limits."""
+
         scroll_region = self.canvas.bbox("all")
         if scroll_region is None:
             return
@@ -402,15 +428,23 @@ class TriviaApp:
         self.canvas.yview_moveto(max(0.0, min(1.0, new_position)))
 
     def _scroll_up(self, _event: tk.Event) -> None:
+        """Handle Linux-style upward mouse-wheel events."""
+
         self._scroll_pixels(-40)
 
     def _scroll_down(self, _event: tk.Event) -> None:
+        """Handle Linux-style downward mouse-wheel events."""
+
         self._scroll_pixels(40)
 
     def _scroll_to_top(self) -> None:
+        """Schedule the current screen to return to its topmost scroll position."""
+
         self.canvas.after_idle(self.canvas.yview_moveto, 0)
 
     def load_high_score(self) -> int:
+        """Read the highest completed cash prize from disk, defaulting to zero."""
+
         try:
             data = json.loads(self.HIGH_SCORE_FILE.read_text(encoding="utf-8"))
             high_score = data["highest_cash_prize"]
@@ -422,6 +456,8 @@ class TriviaApp:
         return high_score
 
     def load_question_history(self) -> dict[str, list[str]]:
+        """Load and validate the bounded per-category question history from disk."""
+
         try:
             data = json.loads(self.QUESTION_HISTORY_FILE.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
@@ -442,6 +478,8 @@ class TriviaApp:
         return history
 
     def remember_questions(self, category: str, quiz: TriviaQuiz) -> None:
+        """Add new unique questions to category history and persist it as JSON."""
+
         previous_questions = self.question_history.setdefault(category, [])
         normalized_questions = {
             question.casefold().strip() for question in previous_questions
@@ -466,6 +504,8 @@ class TriviaApp:
             pass
 
     def record_cash_prize(self, winnings: int) -> None:
+        """Persist winnings only when they exceed the existing highest prize."""
+
         if winnings <= self.high_score:
             return
 
@@ -482,6 +522,8 @@ class TriviaApp:
             pass
 
     def open_home_menu(self) -> None:
+        """Snapshot the active game and show the leave-or-pause decision screen."""
+
         if self.screen_state not in {"answering", "feedback"}:
             return
 
@@ -513,6 +555,8 @@ class TriviaApp:
         self._scroll_to_top()
 
     def pause_game(self) -> None:
+        """Show a disabled main menu while retaining the current game in memory."""
+
         if self.screen_state != "home_prompt":
             return
 
@@ -534,6 +578,8 @@ class TriviaApp:
         self._scroll_to_top()
 
     def resume_game(self) -> None:
+        """Restore the exact question, feedback, controls, and state saved on pause."""
+
         if self.screen_state != "paused" or not self.game_snapshot:
             return
 
@@ -568,12 +614,16 @@ class TriviaApp:
         self._scroll_to_top()
 
     def leave_game(self) -> None:
+        """Abandon the current run without recording winnings and reset the menu."""
+
         if self.screen_state not in {"home_prompt", "paused"}:
             return
 
         self.show_category_selection()
 
     def show_category_selection(self) -> None:
+        """Reset transient game state and display the interactive category menu."""
+
         self._scroll_to_top()
         self.screen_state = "category"
         self.quiz = None
@@ -595,6 +645,8 @@ class TriviaApp:
         self.category_frame.pack(fill="x", before=self.feedback_label)
 
     def load_quiz(self, category: str) -> None:
+        """Show a loading screen and request a fresh quiz on a background thread."""
+
         self._scroll_to_top()
         self.screen_state = "loading"
         self.quiz = None
@@ -628,6 +680,8 @@ class TriviaApp:
         category_topic: str,
         recent_questions: tuple[str, ...],
     ) -> None:
+        """Call OpenAI for a structured quiz, avoiding recent category questions."""
+
         try:
             variety_angle = random.choice(self.VARIETY_ANGLES)
             exclusion_text = ""
@@ -664,6 +718,8 @@ class TriviaApp:
             self.results.put(("error", str(error)))
 
     def _check_for_quiz(self) -> None:
+        """Poll the thread-safe result queue until generation succeeds or fails."""
+
         try:
             result_type, result = self.results.get_nowait()
         except Empty:
@@ -676,6 +732,8 @@ class TriviaApp:
             self.show_error(str(result))
 
     def start_quiz(self, quiz: TriviaQuiz) -> None:
+        """Initialize a new run and reveal its gameplay controls."""
+
         self.quiz = quiz
         self.question_number = 0
         self.score = 0
@@ -691,6 +749,8 @@ class TriviaApp:
         self.show_question()
 
     def show_question(self) -> None:
+        """Render the current question, prize information, and available choices."""
+
         if self.quiz is None:
             return
 
@@ -727,6 +787,8 @@ class TriviaApp:
         )
 
     def handle_action(self) -> None:
+        """Route the main action button according to the current screen state."""
+
         if self.screen_state == "paused":
             self.resume_game()
         elif self.screen_state == "answering":
@@ -740,6 +802,8 @@ class TriviaApp:
             self.load_quiz(self.current_category)
 
     def guaranteed_winnings(self) -> int:
+        """Return the secured checkpoint prize based on answered questions."""
+
         if self.score >= 10:
             return 32_000
         if self.score >= 5:
@@ -747,6 +811,8 @@ class TriviaApp:
         return 0
 
     def use_fifty_fifty(self) -> None:
+        """Use the one-time lifeline by disabling two incorrect choices."""
+
         if self.quiz is None or self.screen_state != "answering" or self.lifeline_used:
             return
 
@@ -769,6 +835,8 @@ class TriviaApp:
         self.lifeline_button.config(text="50:50 Lifeline Used", state="disabled")
 
     def walk_away(self) -> None:
+        """End the run voluntarily and bank the latest correctly earned prize."""
+
         if self.screen_state not in {"answering", "feedback"}:
             return
 
@@ -780,6 +848,8 @@ class TriviaApp:
         )
 
     def submit_answer(self) -> None:
+        """Validate and score the selected answer, then advance or end the run."""
+
         if self.quiz is None:
             return
 
@@ -827,6 +897,8 @@ class TriviaApp:
         self.action_button.config(text="Next Question")
 
     def show_end_screen(self, heading: str, message: str, cash_prize: int) -> None:
+        """Finish a run, record eligible winnings, and show its outcome message."""
+
         self._scroll_to_top()
         self.record_cash_prize(cash_prize)
         self.screen_state = "finished"
@@ -844,6 +916,8 @@ class TriviaApp:
         self.action_button.config(text="Choose Another Category", state="normal")
 
     def show_error(self, message: str) -> None:
+        """Replace the current screen with a retryable quiz-generation error."""
+
         self._scroll_to_top()
         self.screen_state = "error"
         self.progress_label.config(text="Could not create the quiz")
@@ -859,6 +933,8 @@ class TriviaApp:
 
 
 def main() -> None:
+    """Load environment settings, create the Tk window, and start its event loop."""
+
     load_dotenv()
     root = tk.Tk()
     TriviaApp(root)

@@ -240,7 +240,7 @@ class TriviaApp:
 
         self.credit_label = tk.Label(
             self.root,
-            text="Constructed by ChatGPT (GPT-5)",
+            text="Constructed by ChatGPT (GPT-5.6 Sol)",
             bg=self.INDIGO,
             fg=self.MUTED,
             font=(self.body_font, 9),

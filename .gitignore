@@ -150,6 +150,8 @@ activemq-data/
 # Environments
 .env
 .envrc
+high_score.json
+question_history.json
 .venv
 env/
 venv/
@@ -216,3 +218,5 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+.DS_Store
